@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2748d6">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>معادله‌یاب نمودار</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9f0ee; --panel:#f8fbfa; --ink:#14233f; --muted:#5b6b86; --line:#c5d3d0; --grid:#c9dcd8; --grid2:#a9c4be;
+  --accent:#2748d6; --accent-ink:#fff; --pen:#2748d6; --fit:#d1226b; --mask:#f08a1c; --ok:#0f8f6a;
+  --font:'Vazirmatn',Tahoma,system-ui,sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0c1730; --panel:#12203f; --ink:#e4efff; --muted:#93a8cc; --line:#27406e; --grid:#1d3560; --grid2:#2c4c86; --accent:#7fb0ff; --accent-ink:#0c1730; --pen:#7fd0ff; --fit:#ff7ab0; --mask:#ffb454; --ok:#5fe0b5; }
+}
+:root[data-theme="dark"]{ --bg:#0c1730; --panel:#12203f; --ink:#e4efff; --muted:#93a8cc; --line:#27406e; --grid:#1d3560; --grid2:#2c4c86; --accent:#7fb0ff; --accent-ink:#0c1730; --pen:#7fd0ff; --fit:#ff7ab0; --mask:#ffb454; --ok:#5fe0b5; }
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.7;-webkit-text-size-adjust:100%}
+main{max-width:720px;margin:0 auto;padding:14px 14px 40px}
+h1{font-size:1.45rem;font-weight:800;margin:6px 0 2px;letter-spacing:0}
+.sub{margin:0 0 14px;color:var(--muted);font-size:.9rem}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--ink);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.tabs button{font:inherit;font-weight:600;padding:10px 6px;border:0;background:transparent;color:var(--ink);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.tabs button+button{border-right:1.5px solid var(--ink)}
+.stage{position:relative;border:1.5px solid var(--ink);border-radius:6px;background:var(--panel);overflow:hidden;line-height:0}
+canvas{display:block;width:100%;touch-action:none;cursor:crosshair}
+.empty{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;line-height:1.7;text-align:center;padding:20px}
+.tools{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px}
+.tools button,.btn{font:inherit;font-size:.88rem;padding:8px 12px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;min-height:40px}
+.tools button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:600}
+.tools .sp{flex:1}
+.hint{font-size:.85rem;color:var(--muted);margin:2px 0 10px;min-height:1.7em}
+details{border:1px solid var(--line);border-radius:8px;background:var(--panel);margin:8px 0;padding:0 12px}
+summary{cursor:pointer;padding:10px 0;font-weight:600;font-size:.92rem}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;padding-bottom:12px}
+label{font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+input[type=number]{font:inherit;direction:ltr;text-align:left;padding:7px 8px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.go{width:100%;font:inherit;font-weight:800;font-size:1.05rem;padding:14px;border-radius:10px;border:0;background:var(--accent);color:var(--accent-ink);cursor:pointer;margin:10px 0 4px}
+:focus-visible{outline:3px solid var(--fit);outline-offset:2px}
+#res{margin-top:14px;display:grid;gap:10px}
+.card{border:1.5px solid var(--line);background:var(--panel);border-radius:10px;padding:12px 14px;cursor:pointer;text-align:right}
+.card[aria-current="true"]{border-color:var(--fit);box-shadow:inset -4px 0 0 var(--fit)}
+.card h3{margin:0 0 6px;font-size:.95rem;font-weight:600}
+.eq{direction:ltr;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.95rem;word-break:break-word;margin:2px 0;color:var(--ink);line-height:1.6}
+.eq.note{font-family:var(--font);direction:rtl;text-align:right;color:var(--muted);font-size:.82rem;background:none;border:0;padding:0 2px}
+.meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:.8rem;color:var(--muted)}
+.meta button{font:inherit;font-size:.8rem;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.warn{color:#b4540a}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .warn{color:#ffb454} }
+.msg{padding:10px 12px;border-radius:8px;border:1px dashed var(--line);color:var(--muted);font-size:.9rem}
+.cal{display:none;gap:8px;padding:6px 0 4px}
+.cal.on{display:grid;grid-template-columns:1fr 1fr}
+.foot{margin-top:22px;color:var(--muted);font-size:.78rem}
+</style>
+</head>
+<body>
+<main>
+  <h1>معادله‌یاب نمودار</h1>
+  <p class="sub">نمودار را با انگشت بکشید یا عکسش را بدهید؛ معادله‌اش را برمی‌گرداند.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tabDraw" aria-selected="true">رسم با انگشت</button>
+    <button role="tab" id="tabImg" aria-selected="false">عکس نمودار</button>
+  </div>
+
+  <div class="stage" id="wrap">
+    <canvas id="cv"></canvas>
+    <div class="empty" id="empty">
+      <div>یک عکس از نمودار انتخاب کنید</div>
+      <button class="btn" id="pickFile">انتخاب عکس / دوربین</button>
+    </div>
+  </div>
+  <input type="file" id="file" accept="image/*" hidden>
+
+  <div class="tools" id="tools">
+    <button id="mDraw" aria-pressed="true">رسم</button>
+    <button id="mPick" aria-pressed="false" hidden>انتخاب رنگ منحنی</button>
+    <button id="mCal" aria-pressed="false" hidden>کالیبره محورها</button>
+    <span class="sp"></span>
+    <button id="undo">برگشت</button>
+    <button id="clear">پاک کردن</button>
+  </div>
+  <div class="cal" id="cal">
+    <label>مقدار <bdi dir="ltr">x</bdi> نقطهٔ دوم، روی محور <bdi dir="ltr">x</bdi><input type="number" id="calX" value="1" step="any"></label>
+    <label>مقدار <bdi dir="ltr">y</bdi> نقطهٔ سوم، روی محور <bdi dir="ltr">y</bdi><input type="number" id="calY" value="1" step="any"></label>
+  </div>
+  <div class="hint" id="hint"></div>
+
+  <div id="tolBox" hidden>
+    <label>حساسیت رنگ (اگر منحنی ناقص انتخاب شد بیشتر کنید)<input type="range" id="tol" min="15" max="160" value="70"></label>
+  </div>
+
+  <details id="rangeBox">
+    <summary>محدودهٔ محورها</summary>
+    <div class="grid4">
+      <label><bdi dir="ltr">x</bdi> کمینه<input type="number" id="vx0" value="-10" step="any"></label>
+      <label><bdi dir="ltr">x</bdi> بیشینه<input type="number" id="vx1" value="10" step="any"></label>
+      <label><bdi dir="ltr">y</bdi> کمینه<input type="number" id="vy0" value="-10" step="any"></label>
+      <label><bdi dir="ltr">y</bdi> بیشینه<input type="number" id="vy1" value="10" step="any"></label>
+    </div>
+  </details>
+
+  <button class="go" id="go">معادله را پیدا کن</button>
+  <div id="res" aria-live="polite"></div>
+  <p class="foot">نتیجه یک برازش تقریبی است؛ هرچه نمودار تمیزتر و محورها دقیق‌تر باشند، معادله دقیق‌تر می‌شود. برای انتخاب شکل دیگر، روی هر کارت بزنید تا روی نمودار نمایش داده شود.</p>
+</main>
+<script>
+/* ================= ENGINE (pure math) ================= */
+const NREF=120, EPSR=0.008;
+function n3(v){ if(!isFinite(v)) return String(v); if(Math.abs(v)<1e-9) return '0'; const s=Number(v.toPrecision(3)); return String(Object.is(s,-0)?0:s); }
+function sgs(v){ if(Math.abs(v)<1e-9||n3(v)==='0') return ''; return v>0?' + '+n3(v):' - '+n3(-v); }
+function joinTerms(terms){
+  let s='';
+  for(const [c,e] of terms){
+    if(Math.abs(c)<1e-9||n3(c)==='0') continue;
+    const neg=c<0, ms=n3(Math.abs(c));
+    const body=e===''?ms:(ms==='1'?e:ms+'*'+e);
+    s+= s===''?(neg?'-':'')+body:(neg?' - ':' + ')+body;
+  }
+  return s||'0';
+}
+function polyStr(c,v){ return joinTerms(c.map((a,k)=>[a,k===0?'':(k===1?v:v+'^'+k)])); }
+function horner(c,x){ let s=0; for(let i=c.length-1;i>=0;i--) s=s*x+c[i]; return s; }
+function solveLinear(A,b){
+  const n=b.length, M=A.map((r,i)=>[...r,b[i]]);
+  for(let i=0;i<n;i++){
+    let p=i; for(let r=i+1;r<n;r++) if(Math.abs(M[r][i])>Math.abs(M[p][i])) p=r;
+    if(Math.abs(M[p][i])<1e-14) return null;
+    [M[i],M[p]]=[M[p],M[i]];
+    for(let r=i+1;r<n;r++){ const f=M[r][i]/M[i][i]; for(let c=i;c<=n;c++) M[r][c]-=f*M[i][c]; }
+  }
+  const x=Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){ let s=M[i][n]; for(let c=i+1;c<n;c++) s-=M[i][c]*x[c]; x[i]=s/M[i][i]; }
+  return x;
+}
+function lstsq(rows,y){
+  const k=rows[0].length, A=Array.from({length:k},()=>Array(k).fill(0)), b=Array(k).fill(0);
+  for(let i=0;i<rows.length;i++){ const r=rows[i]; for(let a=0;a<k;a++){ b[a]+=r[a]*y[i]; for(let c=0;c<k;c++) A[a][c]+=r[a]*r[c]; } }
+  for(let a=0;a<k;a++) A[a][a]*=1+1e-10;
+  const x=solveLinear(A,b); return x&&x.every(isFinite)?x:null;
+}
+function jacobi(S){
+  const n=S.length, A=S.map(r=>r.slice()), V=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+  for(let sw=0;sw<80;sw++){
+    let off=0; for(let i=0;i<n;i++)for(let j=i+1;j<n;j++) off+=A[i][j]*A[i][j];
+    if(off<1e-24) break;
+    for(let p=0;p<n;p++)for(let q=p+1;q<n;q++){
+      if(Math.abs(A[p][q])<1e-300) continue;
+      const th=(A[q][q]-A[p][p])/(2*A[p][q]);
+      const t=(th>=0?1:-1)/(Math.abs(th)+Math.sqrt(th*th+1)), c=1/Math.sqrt(t*t+1), s=t*c;
+      for(let k=0;k<n;k++){ const a=A[k][p], b=A[k][q]; A[k][p]=c*a-s*b; A[k][q]=s*a+c*b; }
+      for(let k=0;k<n;k++){ const a=A[p][k], b=A[q][k]; A[p][k]=c*a-s*b; A[q][k]=s*a+c*b; }
+      for(let k=0;k<n;k++){ const a=V[k][p], b=V[k][q]; V[k][p]=c*a-s*b; V[k][q]=s*a+c*b; }
+    }
+  }
+  return {vals:A.map((r,i)=>r[i]),V};
+}
+function snapParams(p,rssFn,rss0,floor){
+  const lim=Math.max(rss0*1.25,rss0+0.5*floor), q=p.slice();
+  for(let i=0;i<q.length;i++){
+    for(const st of [10,5,2,1,0.5,0.25,0.1,0.05]){
+      const t=Math.round(q[i]/st)*st; if(t===q[i]) break;
+      const old=q[i]; q[i]=t; if(rssFn(q)<=lim) break; q[i]=old;
+    }
+  }
+  return q;
+}
+const hs=h=>sgs(-h);
+const scoreC=(mse,k,diag)=>{ const e=EPSR*diag; return NREF*Math.log(Math.max(mse,e*e))+k*Math.log(NREF); };
+
+/* ---- geometry helpers ---- */
+function densify(s,step){
+  if(s.length<2) return s.slice();
+  const out=[s[0]];
+  for(let i=1;i<s.length;i++){
+    const a=s[i-1],b=s[i],d=Math.hypot(b[0]-a[0],b[1]-a[1]), m=Math.max(1,Math.ceil(d/step));
+    for(let j=1;j<=m;j++) out.push([a[0]+(b[0]-a[0])*j/m,a[1]+(b[1]-a[1])*j/m]);
+  }
+  return out;
+}
+function thin(P,cell){
+  const m=new Map();
+  for(const p of P){ const k=Math.floor(p[0]/cell)+','+Math.floor(p[1]/cell); let o=m.get(k); if(!o){o=[0,0,0];m.set(k,o);} o[0]+=p[0];o[1]+=p[1];o[2]++; }
+  return [...m.values()].map(o=>[o[0]/o[2],o[1]/o[2]]);
+}
+function orderNN(P0){
+  let P=P0; if(P.length>700){ const st=P.length/700; P=Array.from({length:700},(_,i)=>P0[Math.floor(i*st)]); }
+  const n=P.length, used=new Uint8Array(n); let cur=0;
+  for(let i=0;i<n;i++) if(P[i][0]<P[cur][0]) cur=i;
+  const out=[P[cur]]; used[cur]=1;
+  for(let k=1;k<n;k++){
+    let b=-1,bd=Infinity; const cx=P[cur][0],cy=P[cur][1];
+    for(let j=0;j<n;j++){ if(used[j]) continue; const d=(P[j][0]-cx)**2+(P[j][1]-cy)**2; if(d<bd){bd=d;b=j;} }
+    used[b]=1; out.push(P[b]); cur=b;
+  }
+  return out;
+}
+function arcResample(P,M,closed){
+  const Q=closed?P.concat([P[0]]):P, cum=[0];
+  for(let i=1;i<Q.length;i++) cum.push(cum[i-1]+Math.hypot(Q[i][0]-Q[i-1][0],Q[i][1]-Q[i-1][1]));
+  const L=cum[cum.length-1]||1e-9, out=[]; let j=1;
+  for(let i=0;i<M;i++){
+    const s=closed?L*i/M:L*i/(M-1);
+    while(j<Q.length-1&&cum[j]<s) j++;
+    const d=(cum[j]-cum[j-1])||1e-12, f=Math.min(1,Math.max(0,(s-cum[j-1])/d));
+    out.push([Q[j-1][0]+(Q[j][0]-Q[j-1][0])*f,Q[j-1][1]+(Q[j][1]-Q[j-1][1])*f]);
+  }
+  return out;
+}
+function distRss(data,curve){
+  let s=0;
+  for(const p of data){ let b=Infinity; for(const q of curve){ const d=(p[0]-q[0])**2+(p[1]-q[1])**2; if(d<b) b=d; } s+=b; }
+  return s;
+}
+function coverage(P){
+  let mx=0,my=0; P.forEach(p=>{mx+=p[0];my+=p[1];}); mx/=P.length; my/=P.length;
+  const S=24, f=new Uint8Array(S);
+  P.forEach(p=>{ const a=Math.atan2(p[1]-my,p[0]-mx); f[Math.min(S-1,Math.floor((a+Math.PI)/(2*Math.PI)*S))]=1; });
+  return f.reduce((a,b)=>a+b,0)/S;
+}
+function binData(pts,ik,dk,diagB,nbMax=120){
+  let lo=Infinity,hi=-Infinity,dlo=Infinity,dhi=-Infinity;
+  for(const p of pts){ lo=Math.min(lo,p[ik]);hi=Math.max(hi,p[ik]);dlo=Math.min(dlo,p[dk]);dhi=Math.max(dhi,p[dk]); }
+  const R=hi-lo,dR=dhi-dlo; if(!(R>0)) return {ok:false,X:[],Y:[]};
+  const nb=nbMax, bins=new Array(nb).fill(null);
+  for(const p of pts){
+    const i=Math.min(nb-1,Math.floor((p[ik]-lo)/R*nb));
+    const b=bins[i]||(bins[i]={sx:0,sy:0,n:0,mn:Infinity,mx:-Infinity});
+    b.sx+=p[ik];b.sy+=p[dk];b.n++;b.mn=Math.min(b.mn,p[dk]);b.mx=Math.max(b.mx,p[dk]);
+  }
+  const X=[],Y=[]; let bad=0;
+  for(const b of bins){ if(!b) continue; X.push(b.sx/b.n);Y.push(b.sy/b.n); if(b.mx-b.mn>Math.max(0.12*dR,0.03*diagB)) bad++; }
+  return {ok:X.length>=15&&bad/X.length<0.1,X,Y};
+}
+
+/* ---- conics ---- */
+function conicFit(P){
+  const n=P.length; let mx=0,my=0; P.forEach(p=>{mx+=p[0];my+=p[1];}); mx/=n;my/=n;
+  let s=0; P.forEach(p=>{s+=(p[0]-mx)**2+(p[1]-my)**2;}); s=Math.sqrt(s/n)||1;
+  const S=Array.from({length:6},()=>Array(6).fill(0));
+  for(const p of P){ const u=(p[0]-mx)/s,v=(p[1]-my)/s,r=[u*u,u*v,v*v,u,v,1]; for(let i=0;i<6;i++)for(let j=0;j<6;j++) S[i][j]+=r[i]*r[j]/n; }
+  const {vals,V}=jacobi(S); let mi=0; for(let i=1;i<6;i++) if(vals[i]<vals[mi]) mi=i;
+  const [A,B,C,D,E,F]=V.map(r=>r[mi]);
+  const det=A*(C*F-E*E/4)-(B/2)*((B/2)*F-(E/2)*(D/2))+(D/2)*((B/2)*(E/2)-C*(D/2));
+  const s2=s*s;
+  return {det:Math.abs(det),c:[A/s2,B/s2,C/s2,(-2*A*mx-B*my)/s2+D/s,(-2*C*my-B*mx)/s2+E/s,(A*mx*mx+B*mx*my+C*my*my)/s2-(D*mx+E*my)/s+F]};
+}
+function normConic(c){ const m=Math.max(Math.abs(c[0]),Math.abs(c[1]),Math.abs(c[2]))||1; let r=c.map(v=>v/m); if(r[0]+r[2]<0) r=r.map(v=>-v); return r; }
+function sampson(c,P){
+  const [A,B,C,D,E,F]=c; let s=0;
+  for(const p of P){ const x=p[0],y=p[1], f=A*x*x+B*x*y+C*y*y+D*x+E*y+F, gx=2*A*x+B*y+D, gy=B*x+2*C*y+E, g=gx*gx+gy*gy; s+= g>1e-18? f*f/g : f*f; }
+  return s;
+}
+function conicInfo(c){
+  const [A,B,C,D,E,F]=c, m=Math.max(Math.abs(A),Math.abs(B),Math.abs(C),1e-12);
+  const lines=[]; let type='general';
+  const disc=B*B-4*A*C, rel=disc/(m*m);
+  const xh=h=>Math.abs(h)<1e-9?'x':`(x${sgs(-h)})`, yk=k=>Math.abs(k)<1e-9?'y':`(y${sgs(-k)})`;
+  if(rel<-0.02||rel>0.02){
+    const den=4*A*C-B*B, h=(B*E-2*C*D)/den, k=(B*D-2*A*E)/den, F0=F+(D*h+E*k)/2;
+    const aligned=Math.abs(B)<0.05*Math.max(Math.abs(A),Math.abs(C));
+    const tr=A+C, d=Math.sqrt(((A-C)/2)**2+(B/2)**2), l1=tr/2+d, l2=tr/2-d, th=0.5*Math.atan2(B,A-C);
+    const s1=-F0/l1, s2=-F0/l2;
+    if(rel<0){
+      if(s1>0&&s2>0){
+        const a1=Math.sqrt(s1),a2=Math.sqrt(s2);
+        if(Math.abs(a1-a2)/Math.max(a1,a2)<0.06){ type='circle'; const r=(a1+a2)/2; lines.push(`${xh(h)}^2 + ${yk(k)}^2 = ${n3(r*r)}`, `مرکز (${n3(h)}, ${n3(k)}) ، شعاع ${n3(r)}`); }
+        else if(aligned){ type='ellipse'; lines.push(`${xh(h)}^2/${n3(-F0/A)} + ${yk(k)}^2/${n3(-F0/C)} = 1`, `مرکز (${n3(h)}, ${n3(k)})`); }
+        else { type='ellipse'; lines.push(`مرکز (${n3(h)}, ${n3(k)}) ، نیم‌قطرها ${n3(a1)} و ${n3(a2)} ، چرخش ${n3(th*180/Math.PI)}°`); }
+      }
+    } else {
+      type='hyperbola';
+      if(aligned){
+        const p=-F0/A,q=-F0/C;
+        if(p>0&&q<0) lines.push(`${xh(h)}^2/${n3(p)} - ${yk(k)}^2/${n3(-q)} = 1`);
+        else if(p<0&&q>0) lines.push(`${yk(k)}^2/${n3(q)} - ${xh(h)}^2/${n3(-p)} = 1`);
+        lines.push(`مرکز (${n3(h)}, ${n3(k)})`);
+      } else lines.push(`مرکز (${n3(h)}, ${n3(k)}) ، چرخش ${n3(th*180/Math.PI)}°`);
+    }
+  } else {
+    type='parabola';
+    if(Math.abs(B)<0.05*m){
+      if(Math.abs(C)<0.05*Math.abs(A)&&Math.abs(E)>1e-9) lines.push('y = '+polyStr([-F/E,-D/E,-A/E],'x'));
+      else if(Math.abs(A)<0.05*Math.abs(C)&&Math.abs(D)>1e-9) lines.push('x = '+polyStr([-F/D,-E/D,-C/D],'y'));
+    }
+  }
+  return {type,lines};
+}
+function conicSample(c,v){
+  const [A,B,C,D,E,F]=c, dots=[], N=700;
+  for(let i=0;i<=N;i++){
+    const x=v.x0+(v.x1-v.x0)*i/N, a=C, b=B*x+E, c0=A*x*x+D*x+F;
+    if(Math.abs(a)<1e-12){ if(Math.abs(b)>1e-12) dots.push([x,-c0/b]); }
+    else { const ds=b*b-4*a*c0; if(ds>=0){ const r=Math.sqrt(ds); dots.push([x,(-b+r)/(2*a)],[x,(-b-r)/(2*a)]); } }
+    const y=v.y0+(v.y1-v.y0)*i/N, a2=A, b2=B*y+D, c2=C*y*y+E*y+F;
+    if(Math.abs(a2)<1e-12){ if(Math.abs(b2)>1e-12) dots.push([-c2/b2,y]); }
+    else { const ds=b2*b2-4*a2*c2; if(ds>=0){ const r=Math.sqrt(ds); dots.push([(-b2+r)/(2*a2),y],[(-b2-r)/(2*a2),y]); } }
+  }
+  return {polys:[],dots};
+}
+
+/* ---- function families ---- */
+function fitFamily(X,Y,vn,dn,diag,out){
+  const n=X.length, xmin=Math.min(...X), xmax=Math.max(...X), R=Math.max(xmax-xmin,1e-9);
+  const floor=n*(EPSR*diag)**2;
+  const rssOf=fn=>{ let s=0; for(let i=0;i<n;i++){ const d=Y[i]-fn(X[i]); if(!isFinite(d)) return Infinity; s+=d*d; } return s; };
+  const pre=dn===vn?'':'';
+  const add=(fam,title,k,p,mk,str)=>{
+    let rss=rssOf(mk(p)); if(!isFinite(rss)) return;
+    const q=snapParams(p,pp=>rssOf(mk(pp)),rss,floor); rss=rssOf(mk(q));
+    const f=mk(q);
+    out.push({fam,title:(dn==='x'?'x بر حسب y — ':'')+title,k,mse:rss/n,lines:[`${dn} = ${str(q,vn)}`],
+      sample:(v)=>{
+        const lo=vn==='x'?v.x0:v.y0, hi=vn==='x'?v.x1:v.y1, yl=vn==='x'?v.y0:v.x0, yh=vn==='x'?v.y1:v.x1, span=yh-yl;
+        const polys=[]; let cur=[],prev=null;
+        for(let i=0;i<=900;i++){
+          const t=lo+(hi-lo)*i/900, u=f(t);
+          if(!isFinite(u)||u<yl-4*span||u>yh+4*span||(prev!==null&&Math.abs(u-prev)>1.5*span)){ if(cur.length>1) polys.push(cur); cur=[]; prev=null; if(!isFinite(u)||u<yl-4*span||u>yh+4*span) continue; }
+          cur.push(vn==='x'?[t,u]:[u,t]); prev=u;
+        }
+        if(cur.length>1) polys.push(cur); return {polys,dots:[]};
+      }});
+  };
+  const fit2=(g)=>{ const rows=X.map(x=>[g(x),1]); const c=lstsq(rows,Y); if(!c) return [Infinity]; let s=0; for(let i=0;i<n;i++){ const d=Y[i]-(c[0]*rows[i][0]+c[1]); s+=d*d; } return [s,c]; };
+  const scan=(vals,fn)=>{ let b=null,bv=Infinity; for(const v of vals){ const r=fn(v)[0]; if(r<bv){bv=r;b=v;} } return b; };
+  const lin=(a,b,m)=>Array.from({length:m},(_,i)=>a+(b-a)*i/(m-1));
+  const lg=(a,b,m)=>Array.from({length:m},(_,i)=>a*Math.pow(b/a,i/(m-1)));
+  const bx=(B,v)=>n3(B)==='1'?v:n3(B)+'*'+v;
+  // polynomial
+  const m0=(xmin+xmax)/2, s0=R/2;
+  for(let d=0;d<=6&&d<=n-4;d++){
+    const rows=X.map(x=>{const u=(x-m0)/s0,r=[];let pw=1;for(let j=0;j<=d;j++){r.push(pw);pw*=u;}return r;});
+    const c=lstsq(rows,Y); if(!c) continue;
+    const q=Array(d+1).fill(0);
+    for(let j=0;j<=d;j++){ const cj=c[j]/Math.pow(s0,j); let bin=1; for(let i=0;i<=j;i++){ q[i]+=cj*bin*Math.pow(-m0,j-i); bin=bin*(j-i)/(i+1); } }
+    const title=d===0?'ثابت':d===1?'خط':d===2?'سهمی، درجه 2':`چندجمله‌ای درجه ${d}`;
+    add('poly',title,d+1,q,p=>x=>horner(p,x),(p,v)=>polyStr(p,v));
+  }
+  if(n<12) return;
+  // sinusoid
+  { const rs=w=>{ const rows=X.map(x=>[Math.sin(w*x),Math.cos(w*x),1]); const c=lstsq(rows,Y); if(!c) return [Infinity]; let s=0; for(let i=0;i<n;i++){ const d=Y[i]-(c[0]*rows[i][0]+c[1]*rows[i][1]+c[2]); s+=d*d; } return [s,c]; };
+    let w=scan(lg(Math.PI/R,30*Math.PI/R,320),rs); let st=1.03;
+    for(let it=0;it<4;it++){ w=scan(lin(w/st,w*st,41),rs); st=1+(st-1)/5; }
+    const [r,c]=rs(w); if(c){ const A=Math.hypot(c[0],c[1]),C=Math.atan2(c[1],c[0]);
+      add('sin','سینوسی',4,[A,w,C,c[2]],p=>x=>p[0]*Math.sin(p[1]*x+p[2])+p[3],(p,v)=>joinTerms([[p[0],`sin(${bx(p[1],v)}${sgs(p[2])})`],[p[3],'']])); } }
+  // exponential
+  { const rs=B=>fit2(x=>Math.exp(B*(x-xmin)));
+    const Bs=[...lg(0.3/R,10/R,200),...lg(0.3/R,10/R,200).map(v=>-v)];
+    let B=scan(Bs,rs); let st=1.08; for(let it=0;it<3;it++){ B=scan(lin(B/st,B*st,31),rs); st=1+(st-1)/4; }
+    const [r,c]=rs(B); if(c) add('exp','نمایی',3,[c[0]*Math.exp(-B*xmin),B,c[1]],p=>x=>p[0]*Math.exp(p[1]*x)+p[2],(p,v)=>joinTerms([[p[0],`e^(${bx(p[1],v)})`],[p[2],'']])); }
+  // log & sqrt
+  for(const [fam,title,g,sf] of [['log','لگاریتمی',Math.log,'ln'],['sqrt','رادیکالی',Math.sqrt,'sqrt']]){
+    const rs=d=>fit2(x=>g(x-(xmin-d)));
+    const d=scan([1e-6*R,...lg(1e-3*R,3*R,120)],rs), [r,c]=rs(d);
+    if(c) add(fam,title,3,[c[0],xmin-d,c[1]],p=>x=>p[0]*g(x-p[1])+p[2],(p,v)=>joinTerms([[p[0],`${sf}(${v}${hs(p[1])})`],[p[2],'']]));
+  }
+  // rational
+  { const rs=h=>{ for(const x of X) if(Math.abs(x-h)<1e-7*R) return [Infinity]; return fit2(x=>1/(x-h)); };
+    const h=scan(lin(xmin-R,xmax+R,900),rs), [r,c]=rs(h);
+    if(c) add('rational','گویا، هذلولی',3,[c[0],h,c[1]],p=>x=>p[0]/(x-p[1])+p[2],(p,v)=>`${n3(p[0])}/${Math.abs(p[1])<1e-9?v:`(${v}${hs(p[1])})`}${sgs(p[2])}`); }
+  // abs
+  { const rs=h=>fit2(x=>Math.abs(x-h)); const h=scan(lin(xmin,xmax,101),rs),[r,c]=rs(h);
+    if(c) add('abs','قدرمطلق',3,[c[0],h,c[1]],p=>x=>p[0]*Math.abs(x-p[1])+p[2],(p,v)=>joinTerms([[p[0],`|${v}${hs(p[1])}|`],[p[2],'']])); }
+  // gaussian
+  { let best=null,bv=Infinity;
+    for(const m of lin(xmin,xmax,41)) for(const s of lg(R/40,R,30)){ const r=fit2(x=>Math.exp(-((x-m)**2)/(2*s*s))); if(r[0]<bv){bv=r[0];best=[m,s,r[1]];} }
+    if(best) add('gauss','گاوسی، زنگوله‌ای',4,[best[2][0],best[0],best[1],best[2][1]],p=>x=>p[0]*Math.exp(-((x-p[1])**2)/(2*p[2]*p[2]))+p[3],(p,v)=>joinTerms([[p[0],`e^(-(${v}${hs(p[1])})^2/${n3(2*p[2]*p[2])})`],[p[3],'']])); }
+}
+
+/* ---- periodic (polar) ---- */
+function fitPolar(X,Y,diag,out,center){
+  const n=X.length, floor=n*(EPSR*diag)**2;
+  const rssOf=fn=>{ let s=0; for(let i=0;i<n;i++){ const d=Y[i]-fn(X[i]); s+=d*d; } return s; };
+  const mkFn=(hm)=>p=>t=>{ let s=p[0]; hm.forEach((m,j)=>{ s+=p[1+2*j]*Math.cos(m*t)+p[2+2*j]*Math.sin(m*t); }); return s; };
+  const str=(hm,p)=>joinTerms([[p[0],''],...hm.flatMap((m,j)=>[[p[1+2*j],`cos(${m===1?'':m+'*'}θ)`],[p[2+2*j],`sin(${m===1?'':m+'*'}θ)`]])]);
+  const sets=[];
+  for(let N=0;N<=7;N++) sets.push({hm:Array.from({length:N},(_,i)=>i+1),title:N===0?'قطبی — دایره':`قطبی — فوریه، ${N} هارمونیک`});
+  for(let m=2;m<=8;m++) sets.push({hm:[m],title:`قطبی — منحنی گل/هارمونیک ${m}`});
+  for(const {hm,title} of sets){
+    const rows=X.map(t=>{ const r=[1]; hm.forEach(m=>r.push(Math.cos(m*t),Math.sin(m*t))); return r; });
+    const c=lstsq(rows,Y); if(!c) continue;
+    const mk=mkFn(hm); let rss=rssOf(mk(c)); const q=snapParams(c,p=>rssOf(mk(p)),rss,floor); rss=rssOf(mk(q)); const f=mk(q);
+    const cx=Math.round(center[0]/0.25)*0.25, cy=Math.round(center[1]/0.25)*0.25;
+    const cc=(Math.hypot(cx-center[0],cy-center[1])<0.02*diag)?[cx,cy]:center;
+    out.push({fam:'polar',title,k:c.length+2,mse:rss/n,lines:[`r = ${str(hm,q)}`,`قطب در (${n3(cc[0])}, ${n3(cc[1])}) ، 0 ≤ θ ≤ 2π`],
+      sample:()=>{ const poly=[]; for(let i=0;i<=720;i++){ const t=-Math.PI+2*Math.PI*i/720, r=f(t); poly.push([cc[0]+r*Math.cos(t),cc[1]+r*Math.sin(t)]); } return {polys:[poly],dots:[]}; }});
+  }
+}
+
+/* ---- parametric ---- */
+const fourE=(c,t)=>{ let s=c[0]; for(let m=1;2*m<c.length;m++) s+=c[2*m-1]*Math.cos(m*t)+c[2*m]*Math.sin(m*t); return s; };
+const fourS=(c)=>joinTerms([[c[0],''],...Array.from({length:(c.length-1)/2},(_,j)=>[[c[2*j+1],`cos(${j===0?'':(j+1)+'*'}t)`],[c[2*j+2],`sin(${j===0?'':(j+1)+'*'}t)`]]).flat()]);
+function fitFourierParam(D,diag,out){
+  const M=D.length, floor=M*(EPSR*diag)**2; let best=null;
+  for(let N=1;N<=10&&4*N+2<M/3;N++){
+    const rows=D.map((_,i)=>{ const t=2*Math.PI*i/M, r=[1]; for(let m=1;m<=N;m++) r.push(Math.cos(m*t),Math.sin(m*t)); return r; });
+    const cx=lstsq(rows,D.map(p=>p[0])), cy=lstsq(rows,D.map(p=>p[1])); if(!cx||!cy) continue;
+    const L=2*N+1, mk=p=>{ const a=p.slice(0,L),b=p.slice(L),o=[]; for(let j=0;j<360;j++){ const t=2*Math.PI*j/360; o.push([fourE(a,t),fourE(b,t)]); } return o; };
+    const p=[...cx,...cy], rss=distRss(D,mk(p)), sc=scoreC(rss/M,2*L,diag);
+    if(!best||sc<best.sc) best={N,L,p,rss,sc,mk};
+  }
+  if(!best) return;
+  const q=snapParams(best.p,p=>distRss(D,best.mk(p)),best.rss,floor), rss=distRss(D,best.mk(q)), L=best.L;
+  out.push({fam:'fourier',title:`پارامتریک — فوریه، ${best.N} هارمونیک`,k:2*L,mse:rss/M,lines:[`x(t) = ${fourS(q.slice(0,L))}`,`y(t) = ${fourS(q.slice(L))}`,'0 ≤ t ≤ 2π'],
+    sample:()=>({polys:[best.mk(q).concat([best.mk(q)[0]])],dots:[]})});
+}
+function fitParamPoly(D,diag,out){
+  const M=D.length, floor=M*(EPSR*diag)**2; let best=null;
+  for(let d=2;d<=8;d++){
+    const rows=D.map((_,i)=>{ const t=-1+2*i/(M-1),r=[]; let pw=1; for(let j=0;j<=d;j++){r.push(pw);pw*=t;} return r; });
+    const cx=lstsq(rows,D.map(p=>p[0])), cy=lstsq(rows,D.map(p=>p[1])); if(!cx||!cy) continue;
+    const L=d+1, mk=p=>{ const a=p.slice(0,L),b=p.slice(L),o=[]; for(let j=0;j<=240;j++){ const t=-1+2*j/240; o.push([horner(a,t),horner(b,t)]); } return o; };
+    const p=[...cx,...cy], rss=distRss(D,mk(p)), sc=scoreC(rss/M,2*L,diag);
+    if(!best||sc<best.sc) best={d,L,p,rss,sc,mk};
+  }
+  if(!best) return;
+  const q=snapParams(best.p,p=>distRss(D,best.mk(p)),best.rss,floor), rss=distRss(D,best.mk(q)), L=best.L;
+  out.push({fam:'parampoly',title:`پارامتریک — چندجمله‌ای درجه ${best.d}`,k:2*L,mse:rss/M,lines:[`x(t) = ${polyStr(q.slice(0,L),'t')}`,`y(t) = ${polyStr(q.slice(L),'t')}`,'-1 ≤ t ≤ 1'],
+    sample:()=>({polys:[best.mk(q)],dots:[]})});
+}
+
+/* ---- top level ---- */
+function analyze(inp){
+  const all=inp.strokes?inp.strokes.flat():inp.cloud;
+  if(!all||all.length<8) return {error:'نقطهٔ کافی برای تحلیل وجود ندارد.'};
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  for(const p of all){ x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]); }
+  const W=x1-x0,H=y1-y0,diag=Math.hypot(W,H);
+  if(!(diag>0)) return {error:'نمودار خیلی کوچک است.'};
+  let pts,seq=null,closed=false;
+  if(inp.strokes){
+    const dense=inp.strokes.map(s=>densify(s,diag*0.004)); pts=dense.flat();
+    if(dense.length===1){ seq=dense[0]; const a=seq[0],b=seq[seq.length-1]; closed=Math.hypot(a[0]-b[0],a[1]-b[1])<0.18*diag; }
+  } else pts=thin(inp.cloud,diag*0.008);
+  if(pts.length<8) return {error:'نقطهٔ کافی برای تحلیل وجود ندارد.'};
+  if(!seq) closed=coverage(pts)>=0.9;
+  const getSeq=()=>seq||(seq=orderNN(pts));
+  const cands=[];
+  const yf=binData(pts,0,1,diag), xf=binData(pts,1,0,diag);
+  const orient=(yf.ok&&!(xf.ok&&W<0.12*H))?'y':(xf.ok?'x':null);
+  if(orient==='y') fitFamily(yf.X,yf.Y,'x','y',diag,cands);
+  else if(orient==='x') fitFamily(xf.X,xf.Y,'y','x',diag,cands);
+  const bestFn=cands.length?Math.min(...cands.map(c=>Math.sqrt(c.mse)))/diag:Infinity;
+  if(true){
+    const cf=conicFit(pts.length>600?pts.filter((_,i)=>i%Math.ceil(pts.length/600)===0):pts);
+    if(cf.det>2e-6){
+      const nc=snapConic(normConic(cf.c),pts,diag), info=conicInfo(nc), names={circle:'دایره',ellipse:'بیضی',hyperbola:'هذلولی',parabola:'سهمی',general:'مقطع مخروطی'};
+      cands.push({fam:'conic',title:'معادلهٔ ضمنی — '+names[info.type],k:5,mse:sampson(nc,pts)/pts.length,
+        lines:[joinTerms([[nc[0],'x^2'],[nc[1],'x*y'],[nc[2],'y^2'],[nc[3],'x'],[nc[4],'y'],[nc[5],'']])+' = 0',...info.lines],sample:v=>conicSample(nc,v)});
+    }
+    // circle (Kåsa)
+    const rows=pts.map(p=>[p[0],p[1],1]), cc=lstsq(rows,pts.map(p=>-(p[0]*p[0]+p[1]*p[1])));
+    if(cc){ const h=-cc[0]/2,k=-cc[1]/2,r2=h*h+k*k-cc[2];
+      if(r2>0){ const rss=p=>{ let s=0; for(const q of pts) s+=(Math.hypot(q[0]-p[0],q[1]-p[1])-p[2])**2; return s; };
+        const p0=[h,k,Math.sqrt(r2)], r0=rss(p0), q=snapParams(p0,rss,r0,pts.length*(EPSR*diag)**2), rr=rss(q);
+        const xh=a=>Math.abs(a)<1e-9?'x':`(x${sgs(-a)})`, yk=a=>Math.abs(a)<1e-9?'y':`(y${sgs(-a)})`;
+        cands.push({fam:'circle',title:'دایره',k:3,mse:rr/pts.length,lines:[`${xh(q[0])}^2 + ${yk(q[1])}^2 = ${n3(q[2]*q[2])}`,`مرکز (${n3(q[0])}, ${n3(q[1])}) ، شعاع ${n3(q[2])}`],
+          sample:()=>{ const o=[]; for(let i=0;i<=360;i++){ const t=2*Math.PI*i/360; o.push([q[0]+q[2]*Math.cos(t),q[1]+q[2]*Math.sin(t)]); } return {polys:[o],dots:[]}; }}); } }
+  }
+  if(!orient){
+    const S=getSeq();
+    if(closed){
+      fitFourierParam(arcResample(S,120,true),diag,cands);
+      let mx=0,my=0; pts.forEach(p=>{mx+=p[0];my+=p[1];}); mx/=pts.length; my/=pts.length;
+      const nb=72, bins=Array.from({length:nb},()=>({s:0,n:0,mn:Infinity,mx:-Infinity}));
+      for(const p of pts){ const a=Math.atan2(p[1]-my,p[0]-mx), r=Math.hypot(p[0]-mx,p[1]-my), i=Math.min(nb-1,Math.floor((a+Math.PI)/(2*Math.PI)*nb)); const b=bins[i]; b.s+=r;b.n++;b.mn=Math.min(b.mn,r);b.mx=Math.max(b.mx,r); }
+      const ne=bins.filter(b=>b.n===0).length, rm=bins.reduce((a,b)=>a+b.s,0)/pts.length;
+      const bad=bins.filter(b=>b.n&&b.mx-b.mn>0.2*rm).length;
+      if(ne<=nb*0.05&&bad<=nb*0.1){
+        const T=[],Rr=[]; bins.forEach((b,i)=>{ if(b.n){ T.push(-Math.PI+2*Math.PI*(i+0.5)/nb); Rr.push(b.s/b.n); } });
+        fitPolar(T,Rr,diag,cands,[mx,my]);
+      }
+    } else fitParamPoly(arcResample(S,120,false),diag,cands);
+  }
+  for(const c of cands){ c.score=scoreC(c.mse,c.k,diag); c.rel=Math.sqrt(c.mse)/diag; }
+  cands.sort((a,b)=>a.score-b.score);
+  const seen=new Set(), top=[], b0=cands[0];
+  for(const c of cands){ if(seen.has(c.fam)) continue; if(top.some(t=>t.lines[0]===c.lines[0])||c.rel>0.15) continue; seen.add(c.fam); top.push(c); if(top.length>=6) break; }
+  return {cands:top,closed,orient};
+}
+function snapConic(c,pts,diag){
+  const r0=sampson(c,pts), q=snapParams(c,p=>sampson(p,pts),r0,pts.length*(EPSR*diag)**2);
+  return q[0]===0&&q[2]===0?c:q;
+}
+
+</script>
+<script>
+/* ================= UI ================= */
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d');
+let W=0,H=0,dpr=1,img=null,imgData=null,mode='draw',tab='draw';
+let strokes=[],cur=null,cloud=null,tc=null,calPts=[],result=null,sel=0;
+const view={x0:-10,x1:10,y0:-10,y1:10};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+// هر تکهٔ لاتین/عددی داخل متن فارسی را ایزوله می‌کند تا ترتیب نمایش به‌هم نریزد
+function bd(s){
+  return esc(s).replace(/\(?[A-Za-z0-9θπ°][^\u0600-\u06FF]*/g,m=>{
+    const core=m.replace(/[\s(—–:;.,!]+$/,''); const tail=m.slice(core.length);
+    return '<bdi dir="ltr">'+core+'</bdi>'+tail;
+  });
+}
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function readView(){ ['x0','x1','y0','y1'].forEach(k=>{ const v=parseFloat($('v'+k).value); if(isFinite(v)) view[k]=v; }); if(view.x1<=view.x0) view.x1=view.x0+1; if(view.y1<=view.y0) view.y1=view.y0+1; }
+function writeView(){ ['x0','x1','y0','y1'].forEach(k=>{ $('v'+k).value=+view[k].toPrecision(4); }); }
+const toPx=(x,y)=>[(x-view.x0)/(view.x1-view.x0)*W,(view.y1-y)/(view.y1-view.y0)*H];
+const toMath=(fx,fy)=>[view.x0+fx*(view.x1-view.x0),view.y1-fy*(view.y1-view.y0)];
+
+function size(){
+  const cw=Math.floor($('wrap').clientWidth); if(!cw) return;
+  dpr=Math.min(window.devicePixelRatio||1,3);
+  W=cw; H=(tab==='img'&&img)?Math.round(cw*img.naturalHeight/img.naturalWidth):Math.round(cw*0.9);
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); cv.style.height=H+'px';
+  imgData=null;
+  if(tab==='img'&&img){ const o=document.createElement('canvas'); o.width=W;o.height=H; const c=o.getContext('2d',{willReadFrequently:true}); c.drawImage(img,0,0,W,H); imgData=c.getImageData(0,0,W,H); if(tc) applyMask(); }
+  render();
+}
+function niceStep(r){ const e=Math.pow(10,Math.floor(Math.log10(r))), m=r/e; return (m<1.5?1:m<3.5?2:m<7.5?5:10)*e; }
+function render(){
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  if(tab==='img'&&img) ctx.drawImage(img,0,0,W,H);
+  else drawGrid();
+  if(tab==='img'&&cloud){ ctx.fillStyle=css('--mask'); ctx.globalAlpha=.85; for(const p of cloud) ctx.fillRect(p[0]*W-1.5,p[1]*H-1.5,3,3); ctx.globalAlpha=1; }
+  ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle=css('--pen'); ctx.lineWidth=3;
+  for(const s of strokes){ if(!s.length) continue; ctx.beginPath(); s.forEach((p,i)=>i?ctx.lineTo(p[0]*W,p[1]*H):ctx.moveTo(p[0]*W,p[1]*H)); if(s.length===1) ctx.lineTo(s[0][0]*W+.1,s[0][1]*H); ctx.stroke(); }
+  if(result&&result.cands&&result.cands[sel]){
+    readView(); const sm=result.cands[sel].sample(view);
+    ctx.strokeStyle=css('--fit'); ctx.fillStyle=css('--fit'); ctx.lineWidth=2.6; ctx.setLineDash([]);
+    for(const poly of sm.polys){ ctx.beginPath(); poly.forEach((p,i)=>{ const q=toPx(p[0],p[1]); i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]); }); ctx.stroke(); }
+    for(const p of sm.dots){ const q=toPx(p[0],p[1]); if(q[0]<-5||q[0]>W+5||q[1]<-5||q[1]>H+5) continue; ctx.beginPath(); ctx.arc(q[0],q[1],1.7,0,6.3); ctx.fill(); }
+  }
+  if(mode==='cal'){ ctx.fillStyle=css('--fit'); ctx.strokeStyle=css('--fit'); ctx.lineWidth=1.5; calPts.forEach((p,i)=>{ ctx.beginPath(); ctx.arc(p[0],p[1],7,0,6.3); ctx.stroke(); ctx.beginPath(); ctx.arc(p[0],p[1],2.5,0,6.3); ctx.fill(); }); }
+}
+function drawGrid(){
+  readView(); const gs=niceStep((view.x1-view.x0)/10), gy=niceStep((view.y1-view.y0)/10);
+  ctx.lineWidth=1; ctx.font='11px '+css('--font'); ctx.fillStyle=css('--muted'); ctx.textAlign='center';
+  for(let x=Math.ceil(view.x0/gs)*gs;x<=view.x1+1e-9;x+=gs){ const px=toPx(x,0)[0]; ctx.strokeStyle=Math.abs(x)<gs/2?css('--grid2'):css('--grid'); ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,H); ctx.stroke(); }
+  for(let y=Math.ceil(view.y0/gy)*gy;y<=view.y1+1e-9;y+=gy){ const py=toPx(0,y)[1]; ctx.strokeStyle=Math.abs(y)<gy/2?css('--grid2'):css('--grid'); ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(W,py); ctx.stroke(); }
+  const ox=Math.min(Math.max(toPx(0,0)[0],0),W), oy=Math.min(Math.max(toPx(0,0)[1],0),H);
+  ctx.strokeStyle=css('--ink'); ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(W,oy); ctx.moveTo(ox,0); ctx.lineTo(ox,H); ctx.stroke();
+  ctx.fillStyle=css('--muted');
+  for(let x=Math.ceil(view.x0/gs)*gs;x<=view.x1+1e-9;x+=gs){ if(Math.abs(x)<gs/2) continue; ctx.textAlign='center'; ctx.fillText(+x.toPrecision(6),toPx(x,0)[0],Math.min(oy+13,H-3)); }
+  for(let y=Math.ceil(view.y0/gy)*gy;y<=view.y1+1e-9;y+=gy){ if(Math.abs(y)<gy/2) continue; ctx.textAlign=ox>W-30?'right':'left'; ctx.fillText(+y.toPrecision(6),ox>W-30?ox-4:ox+4,toPx(0,y)[1]-3); }
+}
+
+/* ---- tabs & modes ---- */
+function setTab(t){
+  tab=t; $('tabDraw').setAttribute('aria-selected',t==='draw'); $('tabImg').setAttribute('aria-selected',t==='img');
+  $('mPick').hidden=$('mCal').hidden=(t!=='img'); $('tolBox').hidden=(t!=='img');
+  $('empty').style.display=(t==='img'&&!img)?'flex':'none';
+  result=null; $('res').innerHTML='';
+  setMode(t==='img'&&img?'cal':'draw'); size();
+}
+function setMode(m){
+  mode=m; ['Draw','Pick','Cal'].forEach(n=>$('m'+n).setAttribute('aria-pressed',mode===n.toLowerCase()));
+  $('cal').classList.toggle('on',m==='cal'); if(m==='cal'){ calPts=[]; }
+  const hints={draw:'با انگشت منحنی را روی شبکه بکشید. می‌توانید چند تکه بکشید.',pick:'روی خود منحنی در عکس بزنید تا همرنگ‌هایش انتخاب شوند (نارنجی).',
+    cal:'مرحلهٔ 1: روی مبدأ مختصات، یعنی نقطهٔ 0,0، در عکس بزنید.'};
+  $('hint').innerHTML=bd(hints[m]); render();
+}
+$('tabDraw').onclick=()=>setTab('draw'); $('tabImg').onclick=()=>setTab('img');
+$('mDraw').onclick=()=>setMode('draw'); $('mPick').onclick=()=>setMode('pick'); $('mCal').onclick=()=>setMode('cal');
+$('pickFile').onclick=()=>$('file').click();
+$('file').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return; const r=new FileReader();
+  r.onload=()=>{ const im=new Image(); im.onload=()=>{ img=im; strokes=[]; cloud=null; tc=null; result=null; $('res').innerHTML=''; $('empty').style.display='none'; size(); setMode('cal'); $('hint').innerHTML=bd('ابتدا محورها را کالیبره کنید. مرحلهٔ 1: روی مبدأ مختصات، یعنی نقطهٔ 0,0، بزنید. اگر مبدأ در عکس نیست، «محدودهٔ محورها» را باز کنید، مقدارها را وارد کنید و به «انتخاب رنگ منحنی» بروید.'); }; im.src=r.result; };
+  r.readAsDataURL(f); e.target.value='';
+};
+$('undo').onclick=()=>{ if(strokes.length) strokes.pop(); else if(cloud){ cloud=null; } result=null; $('res').innerHTML=''; render(); };
+$('clear').onclick=()=>{ strokes=[]; cloud=null; tc=null; calPts=[]; result=null; $('res').innerHTML=''; if(mode==='cal') setMode('cal'); else render(); };
+['vx0','vx1','vy0','vy1'].forEach(id=>$(id).oninput=()=>{ readView(); render(); });
+$('tol').oninput=()=>{ if(tc){ applyMask(); render(); } };
+
+/* ---- pointer ---- */
+function pos(e){ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*W,(e.clientY-r.top)/r.height*H]; }
+cv.addEventListener('pointerdown',e=>{
+  if(tab==='img'&&!img) return; e.preventDefault(); const p=pos(e);
+  if(mode==='draw'){ cv.setPointerCapture(e.pointerId); cur=[[p[0]/W,p[1]/H]]; strokes.push(cur); result=null; }
+  else if(mode==='pick') pickAt(p);
+  else if(mode==='cal') calClick(p);
+  render();
+});
+cv.addEventListener('pointermove',e=>{
+  if(!cur) return; const p=pos(e), l=cur[cur.length-1];
+  if(Math.hypot((p[0]/W-l[0])*W,(p[1]/H-l[1])*H)>2){ cur.push([p[0]/W,p[1]/H]); render(); }
+});
+const endS=()=>{ cur=null; };
+cv.addEventListener('pointerup',endS); cv.addEventListener('pointercancel',endS);
+
+function pickAt(p){
+  if(!imgData) return; const x=Math.round(p[0]),y=Math.round(p[1]); let r=0,g=0,b=0,n=0;
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){ const xx=x+dx,yy=y+dy; if(xx<0||yy<0||xx>=W||yy>=H) continue; const i=(yy*W+xx)*4; r+=imgData.data[i];g+=imgData.data[i+1];b+=imgData.data[i+2];n++; }
+  tc=[r/n,g/n,b/n]; applyMask(); result=null;
+}
+function applyMask(){
+  if(!tc||!imgData) return; const d=imgData.data, t=+$('tol').value, t2=t*t, cells=new Map();
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const i=(y*W+x)*4, dr=d[i]-tc[0],dg=d[i+1]-tc[1],db=d[i+2]-tc[2];
+    if(dr*dr+dg*dg+db*db<t2){ const k=((y/3)|0)*4096+((x/3)|0); let o=cells.get(k); if(!o){o=[0,0,0];cells.set(k,o);} o[0]+=x;o[1]+=y;o[2]++; }
+  }
+  cloud=[...cells.values()].map(o=>[o[0]/o[2]/W,o[1]/o[2]/H]);
+  const frac=cloud.length/((W/3)*(H/3));
+  $('hint').innerHTML=frac>0.25?'<span class="warn">بخش بزرگی از عکس انتخاب شد؛ احتمالاً رنگ پس‌زمینه را زده‌اید. دوباره روی خود منحنی بزنید.</span>':`${cloud.length} نقطه انتخاب شد. اگر منحنی ناقص است حساسیت را بیشتر کنید، یا روی آن با انگشت بکشید.`;
+}
+function calClick(p){
+  calPts.push(p); const s=calPts.length;
+  if(s===1) $('hint').innerHTML=bd('مرحلهٔ 2: روی یک نقطه از محور x بزنید که مقدارش را می‌دانید، مثلاً عدد 1 یا 5 روی محور، و همان مقدار را در کادر x بنویسید.');
+  if(s===2) $('hint').innerHTML=bd('مرحلهٔ 3: روی یک نقطه از محور y بزنید که مقدارش را می‌دانید و همان مقدار را در کادر y بنویسید.');
+  if(s===3){
+    const vx=parseFloat($('calX').value), vy=parseFloat($('calY').value), o=calPts[0];
+    const sx=(calPts[1][0]-o[0])/vx, sy=(o[1]-calPts[2][1])/vy;
+    if(!isFinite(sx)||!isFinite(sy)||!sx||!sy){ $('hint').innerHTML='<span class="warn">کالیبراسیون ناموفق بود؛ دوباره از مرحلهٔ 1 شروع کنید.</span>'; calPts=[]; return; }
+    view.x0=-o[0]/sx; view.x1=(W-o[0])/sx; view.y1=o[1]/sy; view.y0=(o[1]-H)/sy;
+    if(view.x1<view.x0) [view.x0,view.x1]=[view.x1,view.x0]; if(view.y1<view.y0) [view.y0,view.y1]=[view.y1,view.y0];
+    writeView(); setMode('pick'); calPts=[];
+  }
+}
+
+/* ---- solve ---- */
+const toCopy=t=>{ if(navigator.clipboard&&navigator.clipboard.writeText) return navigator.clipboard.writeText(t).catch(()=>fallbackCopy(t)); fallbackCopy(t); };
+function fallbackCopy(t){ const a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{document.execCommand('copy');}catch(e){} a.remove(); }
+$('go').onclick=()=>{
+  readView(); const res=$('res'); const m=p=>toMath(p[0],p[1]);
+  let inp=null;
+  if(strokes.some(s=>s.length>1)) inp={strokes:strokes.filter(s=>s.length>1).map(s=>s.map(m))};
+  else if(tab==='img'&&cloud&&cloud.length) inp={cloud:cloud.map(m)};
+  if(!inp){ res.innerHTML='<div class="msg">'+(tab==='img'?'اول روی منحنی در عکس بزنید یا با انگشت رویش بکشید.':'اول نمودار را روی شبکه بکشید.')+'</div>'; return; }
+  res.innerHTML='<div class="msg">در حال محاسبه…</div>';
+  setTimeout(()=>{
+    let r; try{ r=analyze(inp); }catch(err){ r={error:'خطا در محاسبه: '+err.message}; }
+    result=r; sel=0;
+    if(r.error||!r.cands.length){ res.innerHTML='<div class="msg">'+(r.error||'معادله‌ای پیدا نشد.')+'</div>'; render(); return; }
+    paintResults(); render(); res.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },30);
+};
+function paintResults(){
+  const res=$('res'); res.innerHTML='';
+  result.cands.forEach((c,i)=>{
+    const d=document.createElement('div'); d.className='card'; d.tabIndex=0; d.setAttribute('role','button'); d.setAttribute('aria-current',i===sel);
+    const eqs=c.lines.map(l=>/[\u0600-\u06FF]/.test(l)?`<div class="eq note">${bd(l)}</div>`:`<div class="eq">${esc(l)}</div>`).join('');
+    const err=(c.rel*100); const poor=err>3;
+    d.innerHTML=`<h3>${bd((i===0?'بهترین تطبیق — ':'')+c.title)}</h3>${eqs}<div class="meta"><span class="${poor?'warn':''}">${poor?'تطبیق ضعیف — ':''}خطای میانگین <bdi dir="ltr">${err<0.1?'&lt; 0.1':err.toFixed(1)}%</bdi> ابعاد نمودار</span><button type="button">کپی</button></div>`;
+    const pick=()=>{ sel=i; [...res.children].forEach((x,j)=>x.setAttribute('aria-current',j===i)); render(); };
+    d.onclick=pick; d.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); pick(); } };
+    d.querySelector('button').onclick=e=>{ e.stopPropagation(); toCopy(c.lines.filter(l=>!/[\u0600-\u06FF]/.test(l)).join('\n')); e.target.textContent='کپی شد'; setTimeout(()=>e.target.textContent='کپی',1400); };
+    res.appendChild(d);
+  });
+}
+window.addEventListener('resize',()=>{ size(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render());
+setTab('draw'); setMode('draw'); writeView();
+</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+</body></html>
