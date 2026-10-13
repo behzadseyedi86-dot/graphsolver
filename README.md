@@ -1,0 +1,2 @@
+# graphsolver
+computes graph equation 
