@@ -163,9 +163,10 @@ function jacobi(S){
   }
   return {vals:A.map((r,i)=>r[i]),V};
 }
-function snapParams(p,rssFn,rss0,floor){
+function snapParams(p,rssFn,rss0,floor,lock){
   const lim=Math.max(rss0*1.25,rss0+0.5*floor), q=p.slice();
   for(let i=0;i<q.length;i++){
+    if(lock&&lock.includes(i)) continue;
     for(const st of [10,5,2,1,0.5,0.25,0.1,0.05]){
       const t=Math.round(q[i]/st)*st; if(t===q[i]) break;
       const old=q[i]; q[i]=t; if(rssFn(q)<=lim) break; q[i]=old;
@@ -311,11 +312,11 @@ function conicSample(c,v){
 function fitFamily(X,Y,vn,dn,diag,out){
   const n=X.length, xmin=Math.min(...X), xmax=Math.max(...X), R=Math.max(xmax-xmin,1e-9);
   const floor=n*(EPSR*diag)**2;
-  const rssOf=fn=>{ let s=0; for(let i=0;i<n;i++){ const d=Y[i]-fn(X[i]); if(!isFinite(d)) return Infinity; s+=d*d; } return s; };
-  const pre=dn===vn?'':'';
-  const add=(fam,title,k,p,mk,str)=>{
+  const hh=R*1e-4;
+  const rssOf=fn=>{ let s=0; for(let i=0;i<n;i++){ let d=Y[i]-fn(X[i]); if(!isFinite(d)) return Infinity; const sl=(fn(X[i]+hh)-fn(X[i]-hh))/(2*hh); d/=Math.sqrt(1+(isFinite(sl)?sl*sl:0)); s+=d*d; } return s; };
+  const add=(fam,title,k,p,mk,str,lock)=>{
     let rss=rssOf(mk(p)); if(!isFinite(rss)) return;
-    const q=snapParams(p,pp=>rssOf(mk(pp)),rss,floor); rss=rssOf(mk(q));
+    const q=snapParams(p,pp=>rssOf(mk(pp)),rss,floor,lock); rss=rssOf(mk(q));
     const f=mk(q);
     out.push({fam,title:(dn==='x'?'x بر حسب y — ':'')+title,k,mse:rss/n,lines:[`${dn} = ${str(q,vn)}`],
       sample:(v)=>{
@@ -349,8 +350,10 @@ function fitFamily(X,Y,vn,dn,diag,out){
   { const rs=w=>{ const rows=X.map(x=>[Math.sin(w*x),Math.cos(w*x),1]); const c=lstsq(rows,Y); if(!c) return [Infinity]; let s=0; for(let i=0;i<n;i++){ const d=Y[i]-(c[0]*rows[i][0]+c[1]*rows[i][1]+c[2]); s+=d*d; } return [s,c]; };
     let w=scan(lg(Math.PI/R,30*Math.PI/R,320),rs); let st=1.03;
     for(let it=0;it<4;it++){ w=scan(lin(w/st,w*st,41),rs); st=1+(st-1)/5; }
-    const [r,c]=rs(w); if(c){ const A=Math.hypot(c[0],c[1]),C=Math.atan2(c[1],c[0]);
-      add('sin','سینوسی',4,[A,w,C,c[2]],p=>x=>p[0]*Math.sin(p[1]*x+p[2])+p[3],(p,v)=>joinTerms([[p[0],`sin(${bx(p[1],v)}${sgs(p[2])})`],[p[3],'']])); } }
+    const [r,c]=rs(w); if(c){ const A=Math.hypot(c[0],c[1]); let C=Math.atan2(c[1],c[0]);
+      let A2=A,lock=[]; const qq=C/(Math.PI/2), rr=Math.round(qq);
+      if(Math.abs(qq-rr)<0.1){ let m=((rr%4)+4)%4; if(m===2){A2=-A2;m=0;} if(m===3){A2=-A2;m=1;} C=m===0?0:Math.PI/2; lock=[2]; }
+      add('sin','سینوسی',4,[A2,w,C,c[2]],p=>x=>p[0]*Math.sin(p[1]*x+p[2])+p[3],(p,v)=>Math.abs(p[2]-Math.PI/2)<1e-9?joinTerms([[p[0],`cos(${bx(p[1],v)})`],[p[3],'']]):joinTerms([[p[0],`sin(${bx(p[1],v)}${sgs(p[2])})`],[p[3],'']]),lock); } }
   // exponential
   { const rs=B=>fit2(x=>Math.exp(B*(x-xmin)));
     const Bs=[...lg(0.3/R,10/R,200),...lg(0.3/R,10/R,200).map(v=>-v)];
@@ -480,7 +483,8 @@ function analyze(inp){
       }
     } else fitParamPoly(arcResample(S,120,false),diag,cands);
   }
-  for(const c of cands){ c.score=scoreC(c.mse,c.k,diag); c.rel=Math.sqrt(c.mse)/diag; }
+  const bias={conic:6};
+  for(const c of cands){ c.score=scoreC(c.mse,c.k,diag)+(bias[c.fam]||0)+(c.fam==='poly'&&c.k>=5?3:0); c.rel=Math.sqrt(c.mse)/diag; }
   cands.sort((a,b)=>a.score-b.score);
   const seen=new Set(), top=[], b0=cands[0];
   for(const c of cands){ if(seen.has(c.fam)) continue; if(top.some(t=>t.lines[0]===c.lines[0])||c.rel>0.15) continue; seen.add(c.fam); top.push(c); if(top.length>=6) break; }
